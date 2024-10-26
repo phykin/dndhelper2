@@ -1,0 +1,32 @@
+services:
+  nginx:
+    container_name: nginx
+    build:
+      context: nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d/:/etc/nginx/conf.d/:ro
+      - ./static:/static:ro
+    restart: unless-stopped
+  api:
+    container_name: api
+    build:
+      context: api/docker
+      dockerfile: Dockerfile
+    volumes:
+      - ./api/backend/:/app:ro
+    restart: unless-stopped
+  db:
+    container_name: db
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

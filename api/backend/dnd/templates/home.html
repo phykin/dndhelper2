@@ -1,0 +1,67 @@
+<!-- home.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <style>
+        /* Navbar and right-aligned login/logout area */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        .nav-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .nav-links li {
+            display: inline;
+            margin-right: 15px;
+        }
+        .auth-area {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <ul class="nav-links">
+            <li><a href="{% url 'home' %}">Home</a></li>
+            {% if not user.is_authenticated %}
+            <li><a href="{% url 'register' %}">Registration</a></li>
+            {% endif %}
+            <!-- Add any other links you want here -->
+        </ul>
+        
+        <!-- Login or Logout Area -->
+        <div class="auth-area">
+            {% if user.is_authenticated %}
+                <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit">Logout</button>
+                </form>
+            {% else %}
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <input type="text" name="username" placeholder="Username" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                </form>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    {% if user.is_authenticated %}
+        <h1>Welcome back, {{ user.username }}!</h1>
+    {% else %}
+        <h1>Welcome, please register to use this site.</h1>
+    {% endif %}
+</body>
+</html>

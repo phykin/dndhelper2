@@ -1,0 +1,20 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Player View</title></head>
+<body>
+    <h1>Player View</h1>
+    <h2>Displayed Artwork</h2>
+    <div id="artworkDisplay">
+        {% for artwork in artworks %}
+            <img src="{% static artwork.file_path %}" alt="{{ artwork.title }}">
+        {% endfor %}
+    </div>    
+    <h2>Messages</h2>
+    <div id="messagesDisplay">
+        {% for message in messages %}
+            <p>{{ message.content }}</p>
+        {% endfor %}
+    </div>
+</body>
+</html>

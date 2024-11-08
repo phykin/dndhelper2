@@ -59,6 +59,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
+            os.path.join(BASE_DIR, "global_templates"),
             os.path.join(BASE_DIR, "dnd", "templates"),
             os.path.join(BASE_DIR, "accounts", "templates"),
         ],
@@ -132,5 +133,5 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = "home"
+LOGIN_REDIRECT_URL = "player_view"
 LOGOUT_REDIRECT_URL = "home"

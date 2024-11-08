@@ -1,9 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><title>DM Control Panel</title></head>
-<body>
-    <h1>DM Control Panel</h1>
-    <h2>Select Artwork to Display</h2>
+{% extends "base.html" %}
+
+{% block title %}DM Control Panel{% endblock %}
+
+{% block content%}
+<h2>Select Artwork to Display</h2>
     <form id="artworkForm">
         <select name="artwork">
             {% for artwork in artworks %}
@@ -19,5 +19,4 @@
         </select>
         <button type="submit">Display Artwork</button>
     </form>
-</body>
-</html>
+{% endblock %}

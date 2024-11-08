@@ -1,9 +1,9 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head><title>Player View</title></head>
-<body>
-    <h1>Player View</h1>
+
+{% block title %}Player View{% endblock %}
+
+{% block content%}
     <h2>Displayed Artwork</h2>
     <div id="artworkDisplay">
         {% for artwork in artworks %}
@@ -16,5 +16,4 @@
             <p>{{ message.content }}</p>
         {% endfor %}
     </div>
-</body>
-</html>
+{% endblock %}

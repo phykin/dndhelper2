@@ -1,8 +1,10 @@
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
+from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
-from django.views.generic import TemplateView
+from django.urls import reverse_lazy
+from django.views.generic import TemplateView, View
 from .models import Artwork, Message
 
 
@@ -32,5 +34,12 @@ class PlayerView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class Home(TemplateView):
-    template_name = "home.html"
+class Home(View):
+    def get(self, request):
+        if request.user.is_authenticated:
+            if request.user.is_superuser:
+                return redirect(reverse_lazy("dm_control_panel"))
+            else:
+                return redirect(reverse_lazy("player_view"))
+        
+        return render(request, "login_or_register.html")

@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'dnd',
+    'channels'
 ]
 
 MIDDLEWARE = [
@@ -76,6 +77,8 @@ TEMPLATES = [
         },
     },
 ]
+
+ASGI_APPLICATION = 'backend.asgi.application'
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
@@ -126,6 +129,14 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Login/Logout configuration
 LOGIN_REDIRECT_URL = "player_view"
 LOGIN_URL = "login"
 LOGOUT_REDIRECT_URL = "home"
+
+# Channels configuration
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}

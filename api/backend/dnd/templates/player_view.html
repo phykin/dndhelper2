@@ -4,6 +4,20 @@
 {% block title %}Player View{% endblock %}
 
 {% block content%}
+    <script>
+        const playerSocket = new WebSocket(
+            "ws://" + window.location.host + "/ws/player/"
+        );
+
+        playerSocket.onopen = function(e) {
+            console.log("Player WebSocket connected");
+        };
+
+        playerSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            document.getElementById("messagesDisplay").innerText = data.message;
+        }
+    </script>
     <h2>Displayed Artwork</h2>
     <div id="artworkDisplay">
         {% for artwork in artworks %}

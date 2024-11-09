@@ -22,6 +22,9 @@ services:
       daphne -b 0.0.0.0 -p 8000 backend.asgi:application"
     environment:
       - DJANGO_SUPERUSER_PASSWORD=root
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - ./api/backend/:/app:ro
     restart: unless-stopped
@@ -32,6 +35,11 @@ services:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

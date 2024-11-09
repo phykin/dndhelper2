@@ -22,3 +22,4 @@ EXPOSE 8000
 # Run the application using Gunicorn
 #CMD ["gunicorn", "--bind", "0.0.0.0:8000", "backend.wsgi:application"]
 CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+#CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "backend.asgi:application"]

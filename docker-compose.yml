@@ -15,6 +15,13 @@ services:
     build:
       context: api/docker
       dockerfile: Dockerfile
+    command: >
+      bash -c "
+      python3 manage.py migrate &&
+      python3 manage.py createsuperuser --no-input --username root --email root@mail.com || true &&
+      daphne -b 0.0.0.0 -p 8000 backend.asgi:application"
+    environment:
+      - DJANGO_SUPERUSER_PASSWORD=root
     volumes:
       - ./api/backend/:/app:ro
     restart: unless-stopped

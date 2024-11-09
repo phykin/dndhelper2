@@ -15,7 +15,8 @@
 
         playerSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-            document.getElementById("messagesDisplay").innerText = data.message;
+            const messagesDisplay = document.getElementById("messagesDisplay");
+            messagesDisplay.innerHTML += `<p>${data.message}</p>`;
         }
     </script>
     <h2>Displayed Artwork</h2>

@@ -2,27 +2,14 @@
 
 {% block title %}DM Control Panel{% endblock %}
 
-{% block content%}
-    <script>
-        const dmSocket = new WebSocket(
-            "ws://" + window.location.host + "/ws/dm/"
-        );
-
-        dmSocket.onopen = function(e) {
-            console.log("DM Websocket connected");
-        };
-
-        dmSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            console.log("Received message from server:", data.message);
-        }
-
-        function broadcastMessage(message) {
-            dmSocket.send(JSON.stringify({
-                "message": message
-            }));
-        }
-    </script>
+{% block content %}
+    <h1>DM Control Panel</h1>
+    <h2>Boradcast Message</h2>
+    <form id="broadcastForm">
+        <label for="broadcastMessage">Message:</label>
+        <input type="text" id="broadcastMessage" placeholder="Enter message">
+        <button type="submit">Send to All</button>
+    </form>
     <h2>Select Artwork to Display</h2>
     <form id="artworkForm">
         <select name="artwork">
@@ -39,4 +26,39 @@
         </select>
         <button type="submit">Display Artwork</button>
     </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const dmSocket = new WebSocket(
+        "ws://" + window.location.host + "/ws/dm/"
+    );
+
+    dmSocket.onopen = function(e) {
+        console.log("DM Websocket connected");
+    };
+
+    dmSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log("Received message from server:", data.message);
+    }
+
+    function broadcastMessage() {
+        const messageInput = document.getElementById("broadcastMessage");
+        const message = messageInput.value;
+        if (dmSocket.readyState === WebSocket.OPEN) {
+            dmSocket.send(JSON.stringify({
+                "message": message
+            }));
+            messageInput.value = "";
+        } else {
+            console.error("WebSocket connection is not open.");
+        }
+    }
+
+    document.getElementById("broadcastForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+        broadcastMessage();
+    });
+</script>
 {% endblock %}

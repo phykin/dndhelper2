@@ -18,10 +18,13 @@ services:
     command: >
       bash -c "
       python3 manage.py migrate &&
-      python3 manage.py createsuperuser --no-input --username root --email root@mail.com || true &&
+      python3 manage.py createsuperuser_if_none &&
       daphne -b 0.0.0.0 -p 8000 backend.asgi:application"
     environment:
+      - DJANGO_SUPERUSER_USERNAME=root
       - DJANGO_SUPERUSER_PASSWORD=root
+      - DJANGO_SUPERUSER_EMAIL=root@mail.com
+      - DJANGO_SETTINGS_MODULE=backend.settings
     depends_on:
       db:
         condition: service_healthy

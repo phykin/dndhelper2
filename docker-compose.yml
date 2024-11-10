@@ -19,6 +19,7 @@ services:
       bash -c "
       python3 manage.py migrate &&
       python3 manage.py createsuperuser_if_none &&
+      python3 manage.py create_dummy_users &&
       daphne -b 0.0.0.0 -p 8000 backend.asgi:application"
     environment:
       - DJANGO_SUPERUSER_USERNAME=root

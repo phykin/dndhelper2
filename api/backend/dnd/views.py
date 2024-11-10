@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
+from django.db import models
 from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
 from django.urls import reverse_lazy
@@ -30,7 +31,7 @@ class PlayerView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         context["artworks"] = Artwork.objects.filter(target_player=user) | Artwork.objects.filter(is_global=True)
-        context["messages"] = Message.objects.filter(target_player=user) | Message.objects.filter(is_global=True)
+        context["messages"] = Message.objects.filter(models.Q(is_global=True) | models.Q(target_player=user)).order_by('-timestamp')[:20]
         return context
 
 

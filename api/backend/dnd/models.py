@@ -13,8 +13,10 @@ class Artwork(models.Model):
 
 class Message(models.Model):
     content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
     target_player = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
     is_global = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Message to {self.target_player.username if self.target_player else 'All'}"
+        target = "All" if self.is_global else self.target_player.username
+        return f"Message to {target}: {self.content[:50]}"

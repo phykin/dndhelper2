@@ -1,34 +1,41 @@
 {% extends "base.html" %}
 {% load static %}
+{% load tz %}
 
 {% block title %}Player View{% endblock %}
 
 {% block content%}
-    <script>
-        const playerSocket = new WebSocket(
-            "ws://" + window.location.host + "/ws/player/"
-        );
-
-        playerSocket.onopen = function(e) {
-            console.log("Player WebSocket connected");
-        };
-
-        playerSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            const messagesDisplay = document.getElementById("messagesDisplay");
-            messagesDisplay.innerHTML += `<p>${data.message}</p>`;
-        }
-    </script>
+    <h1>Player View</h1>
     <h2>Displayed Artwork</h2>
     <div id="artworkDisplay">
         {% for artwork in artworks %}
             <img src="{% static artwork.file_path %}" alt="{{ artwork.title }}">
         {% endfor %}
     </div>    
-    <h2>Messages</h2>
+    <h2>Messages from DM</h2>
     <div id="messagesDisplay">
         {% for message in messages %}
-            <p>{{ message.content }}</p>
+        <p>{{ message.timestamp | localtime | date:"d.m.Y H:i:s T" }} - {{ message.content }}</p>
         {% endfor %}
     </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const playerSocket = new WebSocket(
+        "ws://" + window.location.host + "/ws/player/"
+    );
+
+    playerSocket.onopen = function(e) {
+        console.log("Player WebSocket connected");
+    };
+
+    playerSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const messagesDisplay = document.getElementById("messagesDisplay");
+        const newMessageElement = document.createElement("p");
+        newMessageElement.textContent = `${data.timestamp} - ${data.message}`;
+        messagesDisplay.prepend(newMessageElement);
+    }
+</script>
 {% endblock %}

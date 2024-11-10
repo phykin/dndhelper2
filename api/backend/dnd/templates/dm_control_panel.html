@@ -4,11 +4,19 @@
 
 {% block content %}
     <h1>DM Control Panel</h1>
-    <h2>Boradcast Message</h2>
-    <form id="broadcastForm">
-        <label for="broadcastMessage">Message:</label>
-        <input type="text" id="broadcastMessage" placeholder="Enter message">
-        <button type="submit">Send to All</button>
+    <h2>Send Message</h2>
+    <form id="messageForm">
+        <label for="targetPlayer">Send to:</label>
+        <select id="targetPlayer">
+            <option value="all">All Players</option>
+            {% for player in players %}
+            <option value="{{ player.username }}">{{ player.username }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="messageContent">Message:</label>
+        <input type="text" id="messageContent" placeholder="Enter message">
+        <button type="submit">Send</button>
     </form>
     <h2>Select Artwork to Display</h2>
     <form id="artworkForm">
@@ -43,12 +51,14 @@
         console.log("Received message from server:", data.message);
     }
 
-    function broadcastMessage() {
-        const messageInput = document.getElementById("broadcastMessage");
-        const message = messageInput.value;
+    function sendMessage() {
+        const targetPlayer = document.getElementById("targetPlayer").value;
+        const messageInput = document.getElementById("messageContent");
+        const messageContent = messageInput.value;
         if (dmSocket.readyState === WebSocket.OPEN) {
             dmSocket.send(JSON.stringify({
-                "message": message
+                "target": targetPlayer,
+                "message": messageContent
             }));
             messageInput.value = "";
         } else {
@@ -56,9 +66,9 @@
         }
     }
 
-    document.getElementById("broadcastForm").addEventListener("submit", function(event) {
+    document.getElementById("messageForm").addEventListener("submit", function(event) {
         event.preventDefault();
-        broadcastMessage();
+        sendMessage();
     });
 </script>
 {% endblock %}

@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'dnd',
-    'channels'
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -140,3 +140,7 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
     },
 }
+
+# Timezone configuration
+USE_TZ = True
+TIME_ZONE = "Europe/Berlin"

@@ -18,22 +18,31 @@
         <input type="text" id="messageContent" placeholder="Enter message">
         <button type="submit">Send</button>
     </form>
-    <h2>Select Artwork to Display</h2>
-    <form id="artworkForm">
-        <select name="artwork">
-            {% for artwork in artworks %}
-                <option value="{{ artwork.id }}">{{ artwork.title }}</option>
-            {% endfor %}
-        </select>
-        <label>Target Player:</label>
-        <select name="player">
-            <option value="">All Players</option>
-            {% for player in players %}
-                <option value="{{ player.id }}">{{ player.username }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit">Display Artwork</button>
+
+    <h2>Upload New Artwork</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ upload_form.as_p }}
+        <button type="submit" name="upload_artwork">Upload</button>
     </form>
+
+    <h2>Manage Artworks</h2>
+    {% for artwork in artworks %}
+    <h3>{{ artwork.title }}</h3>
+    <img src="/artwork/{{ artwork.filename }}" alt="{{ artwork.title }}" style="max-width: 200px;">
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="artwork_id" value="{{ artwork.id }}">
+        <label>Select Players:</label><br>
+        {% for player in players %}
+        <input type="checkbox" name="players" value="{{ player.id }}"> {{ player.username }}<br>
+        {% endfor %}
+        <button type="submit" name="action" value="make_available">Make Available</button>
+        <button type="submit" name="action" value="revoke_access">Revoke Access</button>
+        <button type="submit" name="action" value="force_display">Force Display</button>
+        <button type="submit" name="action" value="remove_force_display">Remove Force Display</button>
+    </form>
+    {% endfor %}
 {% endblock %}
 
 {% block scripts %}

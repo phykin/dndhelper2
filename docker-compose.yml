@@ -9,6 +9,7 @@ services:
     volumes:
       - ./nginx/conf.d/:/etc/nginx/conf.d/:ro
       - ./static:/static:ro
+      - ./artwork:/artwork:ro
     restart: unless-stopped
   api:
     container_name: api
@@ -31,6 +32,7 @@ services:
         condition: service_healthy
     volumes:
       - ./api/backend/:/app:ro
+      - ./artwork:/artwork
     restart: unless-stopped
   db:
     container_name: db

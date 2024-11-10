@@ -2,10 +2,10 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class Artwork(models.Model):
-    file_path = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
-    target_player = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
-    is_global = models.BooleanField(default=False)
+    filename = models.CharField(max_length=255)
+    available_to = models.ManyToManyField(User, related_name="available_artworks", blank=True)
+    forced_display = models.ManyToManyField(User, related_name="forced_artworks", blank=True)
 
     def __str__(self):
         return self.title

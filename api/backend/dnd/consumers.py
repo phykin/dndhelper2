@@ -65,6 +65,7 @@ class DMConsumer(AsyncWebsocketConsumer):
 
 class PlayerConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        self.user = self.scope["user"]
         self.user_group_name = f"user_{self.scope['user'].username}"
         await self.channel_layer.group_add("game", self.channel_name)
         await self.channel_layer.group_add(self.user_group_name, self.channel_name)
@@ -73,6 +74,27 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard("game", self.channel_name)
         await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
+
+    async def force_artwork(self, event):
+        title = event["title"]
+        filename = event["filename"]
+        await self.send(text_data=json.dumps({
+            "type": "force_artwork",
+            "title": title,
+            "filename": filename
+        }))
+    
+    async def remove_force_artwork(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "remove_force_artwork",
+        }))
+
+    async def remove_artwork(self, event):
+        artwork_id = event["artwork_id"]
+        await self.send(text_data=json.dumps({
+            "type": "remove_artwork",
+            "artwork_id": artwork_id,
+        }))
 
     async def broadcast_message(self, event):
         target = event["target"]

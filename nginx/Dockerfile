@@ -1,6 +1,6 @@
 FROM nginx:alpine
 
-VOLUME /static, /etc/nginx/conf.d/
+VOLUME /static, /etc/nginx/conf.d, /artwork
 
 EXPOSE 80
 

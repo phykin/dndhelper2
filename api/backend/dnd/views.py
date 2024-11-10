@@ -1,3 +1,7 @@
+import os
+
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
@@ -7,14 +11,111 @@ from django.utils.decorators import method_decorator
 from django.urls import reverse_lazy
 from django.views.generic import TemplateView, View
 from .models import Artwork, Message
+from .forms import ArtworkUploadForm
 
 
 def dm_required(user):
     return user.is_superuser
 
 @method_decorator(user_passes_test(dm_required), name="dispatch")
-class DMControlPanelView(LoginRequiredMixin, TemplateView):
+class DMControlPanelView(LoginRequiredMixin, View):
     template_name = "dm_control_panel.html"
+
+    def get(self, request, *args, **kwargs):
+        upload_form = ArtworkUploadForm()
+        artworks = Artwork.objects.all()
+        players = User.objects.filter(is_superuser=False)
+        return render(request, self.template_name, {
+            "upload_form": upload_form,
+            "artworks": artworks,
+            "players": players,
+        })
+
+    def post(self, request, *args, **kwargs):
+        print("REQUEST:", request.POST)
+        if "upload_artwork" in request.POST:
+            upload_form = ArtworkUploadForm(request.POST, request.FILES)
+            if upload_form.is_valid():
+                title = upload_form.cleaned_data["title"]
+                file = upload_form.cleaned_data["file"]
+                filename = file.name
+
+                artwork_dir = '/artwork/'
+                filepath = os.path.join(artwork_dir, filename)
+                with open(filepath, "wb+") as destination:
+                    for chunk in file.chunks():
+                        destination.write(chunk)
+                
+                artwork = Artwork.objects.create(
+                    title=title,
+                    filename=filename,
+                )
+
+                return redirect("dm_control_panel")
+            else:
+                artworks = Artwork.objects.all()
+                players = User.objects.filter(is_superuser=False)
+                return render(request, self.template_name, {
+                    "upload_form": upload_form,
+                    "artworks": artworks,
+                    "players": players,
+                })
+        elif "action" in request.POST:
+            artwork_id = request.POST.get("artwork_id")
+            action = request.POST.get("action")
+            artwork = Artwork.objects.get(id=artwork_id)
+
+            if action == "make_available":
+                player_ids = request.POST.getlist("players")
+                players = User.objects.filter(id__in=player_ids)
+                artwork.available_to.add(*players)
+            elif action == "revoke_access":
+                player_ids = request.POST.getlist("players")
+                players = User.objects.filter(id__in=player_ids)
+                artwork.available_to.remove(*players)
+                artwork.forced_display.remove(*players)
+
+                channel_layer = get_channel_layer()
+                for player in players:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{player.username}",
+                        {
+                            "type": "remove_artwork",
+                            "artwork_id": artwork.id,
+                        }
+                    )
+            elif action == "force_display":
+                player_ids = request.POST.getlist("players")
+                players = User.objects.filter(id__in=player_ids)
+                artwork.forced_display.add(*players)
+
+                channel_layer = get_channel_layer()
+                for player in players:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{player.username}",
+                        {
+                            "type": "force_artwork",
+                            "title": artwork.title,
+                            "filename": artwork.filename,
+                        }
+                    )
+            elif action == "remove_force_display":
+                player_ids = request.POST.getlist("players")
+                players = User.objects.filter(id__in=player_ids)
+                artwork.forced_display.remove(*players)
+
+                channel_layer = get_channel_layer()
+                for player in players:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{player.username}",
+                        {
+                            "type": "remove_force_artwork",
+                        }
+                    )
+        
+        return redirect("dm_control_panel")
+
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -24,8 +125,28 @@ class DMControlPanelView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class PlayerView(LoginRequiredMixin, TemplateView):
+class PlayerView(LoginRequiredMixin, View):
     template_name = "player_view.html"
+
+    def get(self, request, *args, **kwargs):
+        player = request.user
+        available_artworks = player.available_artworks.all()
+        forced_artwork = player.forced_artworks.first()
+
+        if forced_artwork:
+            current_artwork = forced_artwork
+        else:
+            current_artwork = None
+        
+        return render(request, self.template_name, {
+            "available_artworks": available_artworks,
+            "current_artwork": current_artwork,
+        })
+
+    def post(self, request, *args, **kwargs):
+        # Not needed anymore?
+        # artwork_id = request.POST.get("artwork_id")
+        return redirect("player_view")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

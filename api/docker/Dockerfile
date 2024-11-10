@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Create a volume for the application data
-VOLUME /app
+VOLUME /app, /artwork
 
 # Set the working directory in the container
 WORKDIR /app

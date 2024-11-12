@@ -34,11 +34,50 @@
         <p>{{ message.timestamp | localtime | date:"d.m.Y H:i:s T" }} - {{ message.content }}</p>
         {% endfor %}
     </div>
+
+    <h2>Initiative Tracker</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Initiative</th>
+                <th>Dexterity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for character in characters %}
+            <tr {% if character.is_current_turn %}style="background-color: #e0ffe0;"{% endif %}>
+                <td>{{ character.name }}</td>
+                <td>{{ character.initiative }}</td>
+                <td>{{ character.dexterity }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">No characters in the initiative tracker.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    var currentArtworkId = {% if current_artwork %}{{ current_artwork.id }}{% else %}null{% endif %};
+    var isArtworkForced = {% if current_artwork %}true{% else %}false{% endif %};
+
+    const initiativeSocket = new WebSocket(
+        "ws://" + window.location.host + "/ws/initiative/"
+    )
+
+    initiativeSocket.onopen = function(e) {
+        console.log("Initiative WebSocket connected");
+    };
+
+    initiativeSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        if (data.type === "initiative_update") {
+            updateInitiativeTracker(data.data)
+        }
+    }
 
     const playerSocket = new WebSocket(
         "ws://" + window.location.host + "/ws/player/"
@@ -50,7 +89,6 @@
 
     playerSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
-        console.log("Message received", data);
 
         if (data.type === "broadcast_message") {
             const messagesDisplay = document.getElementById("messagesDisplay");
@@ -58,6 +96,7 @@
             newMessageElement.textContent = `${data.timestamp} - ${data.message}`;
             messagesDisplay.prepend(newMessageElement);
         } else if (data.type === "force_artwork") {
+            isArtworkForced = true;
             const availableArtworks = document.getElementById("availableArtworks");
             if (availableArtworks) {
                 availableArtworks.style.display = 'none';
@@ -68,28 +107,22 @@
                 <h2>The DM has selected an artwork for you:</h2>
                 <img src="/artwork/${data.filename}" alt="${data.title}" style="max-width: 500px;">
             `;
-            currentArtworkId = data.artwork_id;
         } else if (data.type === "remove_force_artwork") {
+            isArtworkForced = false;
             const availableArtworks = document.getElementById("availableArtworks");
             if (availableArtworks) {
                 availableArtworks.style.display = 'block';
             }
             const artworkDisplay = document.getElementById("artworkDisplay");
             artworkDisplay.innerHTML = `<p>No artwork selected.</p>`;
-            currentArtworkId = null;
-            location.reload();
         } else if (data.type === "remove_artwork") {
-            if (window.currentArtworkId == data.artwork_id) {
-                const artworkDisplay = document.getElementById("artworkDisplay");
-                artworkDisplay.innerHTML = '<p>No artwork selected.</p>'
-                currentArtworkId = null;
-                location.reload();
-            }
+            const artworkDisplay = document.getElementById("artworkDisplay");
+            artworkDisplay.innerHTML = '<p>No artwork selected.</p>'
         }
     }
 
     function selectArtwork(artworkId, title, filename) {
-        if (currentArtworkId !== null) {
+        if (isArtworkForced) {
             alert("You cannot change the artwork while the DM has selected one for you.");
             return;
         }
@@ -98,7 +131,23 @@
             <h2>Current Artwork: ${title}</h2>
             <img src="/artwork/${filename}" alt="${title}" style="max-width: 500px;">
         `;
-        currentArtworkId = artworkId;
+    }
+
+    function updateInitiativeTracker(characters) {
+        const tbody = document.querySelector("table tbody");
+        tbody.innerHTML = "";
+        characters.forEach(character => {
+            const row = document.createElement("tr");
+            if (character.is_current_turn) {
+                row.style.backgroundColor = '#e0ffe0';
+            }
+            row.innerHTML = `
+                <td>${character.name}</td>
+                <td>${character.initiative}</td>
+                <td>${character.dexterity}</td>
+            `;
+            tbody.appendChild(row);
+        });
     }
 </script>
 {% endblock %}

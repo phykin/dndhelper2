@@ -9,9 +9,9 @@ from django.db import models
 from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
 from django.urls import reverse_lazy
-from django.views.generic import TemplateView, View
-from .models import Artwork, Message
-from .forms import ArtworkUploadForm
+from django.views.generic import View
+from .models import Artwork, Message, Character
+from .forms import ArtworkUploadForm, CharacterForm
 
 
 def dm_required(user):
@@ -136,6 +136,81 @@ class DMControlPanelView(LoginRequiredMixin, View):
         return context
 
 
+@method_decorator(user_passes_test(dm_required), name="dispatch")
+class DMInitiativeView(LoginRequiredMixin, View):
+    template_name = "dm_initiative.html"
+
+    def get(self, request):
+        characters = Character.objects.all()
+        form = CharacterForm()
+        return render(request, self.template_name, {"characters": characters, "form": form})
+    
+    def post(self, request):
+        if "add_character" in request.POST:
+            form = CharacterForm(request.POST)
+            if form.is_valid():
+                form.save()
+                self.send_initiative_update()
+                return redirect("dm_initiative")
+        elif "modify_character" in request.POST:
+            character_id = request.POST.get("character_id")
+            character = Character.objects.get(id=character_id)
+            form = CharacterForm(request.POST, instance=character)
+            if form.is_valid():
+                form.save()
+                self.send_initiative_update()
+                return redirect("dm_initiative")
+        elif "remove_character" in request.POST:
+            character_id = request.POST.get("character_id")
+            Character.objects.filter(id=character_id).delete()
+            self.send_initiative_update()
+            return redirect("dm_initiative")
+        elif "next_turn" in request.POST:
+            self.advance_turn(forward=True)
+        elif "previous_turn" in request.POST:
+            self.advance_turn(forward=False)
+        else:
+            print("UNKNOWN POST TYPE", request.POST)
+
+        self.send_initiative_update()
+        return redirect("dm_initiative")
+
+    def advance_turn(self, forward=True):
+        characters = list(Character.objects.all())
+        if not characters:
+            return
+        
+        current_index = next((i for i, c in enumerate(characters) if c.is_current_turn), None)
+
+        if current_index is None:
+            Character.objects.update(is_current_turn=False)
+            characters[0].is_current_turn = True
+            characters[0].save()
+            return
+
+        characters[current_index].is_current_turn = False
+        characters[current_index].save()
+
+        if forward:
+            next_index = (current_index + 1) % len(characters)
+        else:
+            next_index = (current_index - 1) % len(characters)
+
+        characters[next_index].is_current_turn = True
+        characters[next_index].save()
+
+    def send_initiative_update(self):
+        characters = list(Character.objects.values())
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "initiative_tracker",
+            {
+                "type": "send_initiative_update",
+                "data": characters,
+            }
+        )
+
+
 class PlayerView(LoginRequiredMixin, View):
     template_name = "player_view.html"
 
@@ -154,10 +229,13 @@ class PlayerView(LoginRequiredMixin, View):
             models.Q(is_global=True) | models.Q(target_player=player)
         ).order_by('-timestamp')[:20]
 
+        characters = Character.objects.all()
+
         return render(request, self.template_name, {
             "available_artworks": available_artworks,
             "current_artwork": current_artwork,
             "messages": messages,
+            "characters": characters,
         })
 
     def post(self, request, *args, **kwargs):
@@ -181,3 +259,4 @@ class Home(View):
                 return redirect(reverse_lazy("player_view"))
         
         return render(request, "login_or_register.html")
+

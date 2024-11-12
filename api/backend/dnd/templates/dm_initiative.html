@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Initiative Tracker</h1>
+
+<h2>Add a New Character</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" name="add_character">Add Character</button>
+</form>
+
+<h2>Characters in Initiative Order</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Initiative</th>
+            <th>Dexterity</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for character in characters %}
+        <tr {% if character.is_current_turn %}style="background-color: #e0ffe0;"{% endif %}>
+            <td>{{ character.name }}</td>
+            <td>{{ character.initiative }}</td>
+            <td>{{ character.dexterity }}</td>
+            <td>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="character_id" value="{{ character.id }}">
+                    <input type="text" name="name" value="{{ character.name }}" required>
+                    <input type="number" name="initiative" value="{{ character.initiative }}" required>
+                    <input type="number" name="dexterity" value="{{ character.dexterity }}" required>
+                    <button type="submit" name="modify_character">Modify</button>
+                </form>
+                <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="character_id" value="{{ character.id }}">
+                    <button type="submit" name="remove_character">Remove</button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">No characters in the initiative tracker.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" name="previous_turn">Previous Turn</button>
+    <button type="submit" name="next_turn">Next Turn</button>
+</form>
+{% endblock %}

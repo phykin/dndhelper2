@@ -33,6 +33,7 @@
             <li><a href="{% url 'player_view' %}">Player View</a></li>
                 {% if user.is_superuser %}
             <li><a href="{% url 'dm_control_panel' %}">DM Control Panel</a></li>
+            <li><a href="{% url 'dm_initiative' %}">Initiative Tracker</a></li>
             <li><a href="{% url 'admin:index' %}">Admin</a></li>
                 {% endif %}
             <li>

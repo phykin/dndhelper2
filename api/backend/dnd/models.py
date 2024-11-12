@@ -1,6 +1,20 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+
+class Character(models.Model):
+    name = models.CharField(max_length=100)
+    initiative = models.IntegerField()
+    dexterity = models.IntegerField()
+    is_current_turn = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        ordering = ['-initiative', '-dexterity']
+
+
 class Artwork(models.Model):
     title = models.CharField(max_length=255)
     filename = models.CharField(max_length=255)

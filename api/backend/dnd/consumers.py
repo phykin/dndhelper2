@@ -78,10 +78,12 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     async def force_artwork(self, event):
         title = event["title"]
         filename = event["filename"]
+        artwork_id = event["artwork_id"]
         await self.send(text_data=json.dumps({
             "type": "force_artwork",
             "title": title,
-            "filename": filename
+            "filename": filename,
+            "artwork_id": artwork_id,
         }))
     
     async def remove_force_artwork(self, event):
@@ -103,6 +105,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         if target == "all" or target == self.scope['user'].username:
             await self.send(text_data=json.dumps({
+                "type": "broadcast_message",
                 "message": message,
                 "timestamp": timestamp,
             }))

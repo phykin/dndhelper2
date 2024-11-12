@@ -9,13 +9,13 @@
     
     <div id="artworkDisplay">
         {% if current_artwork %}
-        <h2>Current Artwork: {{ current_artwork.title }}</h2>
+        <h2>The DM has selected an artwork for you:</h2>
         <img src="/artwork/{{ current_artwork.filename }}" alt="{{ current_artwork.title }}" style="max-width: 500px;"></img>
         {% else %}
         <p>No artwork selected</p>
         {% endif %}
     </div>
-    
+    {% if not current_artwork %}
     <h2>Available Artworks</h2>
     <div id="availableArtworks">
         {% for artwork in available_artworks %}
@@ -26,6 +26,7 @@
         </div>
         {% endfor %}
     </div>
+    {% endif %}
 
     <h2>Messages from DM</h2>
     <div id="messagesDisplay">
@@ -37,6 +38,8 @@
 
 {% block scripts %}
 <script>
+    var currentArtworkId = {% if current_artwork %}{{ current_artwork.id }}{% else %}null{% endif %};
+
     const playerSocket = new WebSocket(
         "ws://" + window.location.host + "/ws/player/"
     );
@@ -48,38 +51,54 @@
     playerSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
         console.log("Message received", data);
+
         if (data.type === "broadcast_message") {
             const messagesDisplay = document.getElementById("messagesDisplay");
             const newMessageElement = document.createElement("p");
             newMessageElement.textContent = `${data.timestamp} - ${data.message}`;
             messagesDisplay.prepend(newMessageElement);
         } else if (data.type === "force_artwork") {
+            const availableArtworks = document.getElementById("availableArtworks");
+            if (availableArtworks) {
+                availableArtworks.style.display = 'none';
+            }
+            
             const artworkDisplay = document.getElementById("artworkDisplay");
             artworkDisplay.innerHTML = `
-                <h2>Current Artwork: ${data.title}</h2>
+                <h2>The DM has selected an artwork for you:</h2>
                 <img src="/artwork/${data.filename}" alt="${data.title}" style="max-width: 500px;">
             `;
-            window.currentArtworkId = data.artwork_id;
+            currentArtworkId = data.artwork_id;
         } else if (data.type === "remove_force_artwork") {
-            window.currentArtworkId = null;
+            const availableArtworks = document.getElementById("availableArtworks");
+            if (availableArtworks) {
+                availableArtworks.style.display = 'block';
+            }
+            const artworkDisplay = document.getElementById("artworkDisplay");
+            artworkDisplay.innerHTML = `<p>No artwork selected.</p>`;
+            currentArtworkId = null;
             location.reload();
         } else if (data.type === "remove_artwork") {
             if (window.currentArtworkId == data.artwork_id) {
                 const artworkDisplay = document.getElementById("artworkDisplay");
                 artworkDisplay.innerHTML = '<p>No artwork selected.</p>'
-                window.currentArtworkId = null;
+                currentArtworkId = null;
                 location.reload();
             }
         }
     }
 
     function selectArtwork(artworkId, title, filename) {
+        if (currentArtworkId !== null) {
+            alert("You cannot change the artwork while the DM has selected one for you.");
+            return;
+        }
         const artworkDisplay = document.getElementById("artworkDisplay");
         artworkDisplay.innerHTML = `
             <h2>Current Artwork: ${title}</h2>
             <img src="/artwork/${filename}" alt="${title}" style="max-width: 500px;">
         `;
-        window.currentArtworkId = artworkId;
+        currentArtworkId = artworkId;
     }
 </script>
 {% endblock %}

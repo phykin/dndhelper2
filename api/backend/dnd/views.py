@@ -23,7 +23,7 @@ class DMControlPanelView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         upload_form = ArtworkUploadForm()
-        artworks = Artwork.objects.all()
+        artworks = Artwork.objects.prefetch_related('available_to', 'forced_on_profiles__user')
         players = User.objects.filter(is_superuser=False)
         return render(request, self.template_name, {
             "upload_form": upload_form,
@@ -32,7 +32,6 @@ class DMControlPanelView(LoginRequiredMixin, View):
         })
 
     def post(self, request, *args, **kwargs):
-        print("REQUEST:", request.POST)
         if "upload_artwork" in request.POST:
             upload_form = ArtworkUploadForm(request.POST, request.FILES)
             if upload_form.is_valid():
@@ -61,8 +60,8 @@ class DMControlPanelView(LoginRequiredMixin, View):
                     "players": players,
                 })
         elif "action" in request.POST:
-            artwork_id = request.POST.get("artwork_id")
             action = request.POST.get("action")
+            artwork_id = request.POST.get("artwork_id")
             artwork = Artwork.objects.get(id=artwork_id)
 
             if action == "make_available":
@@ -73,39 +72,51 @@ class DMControlPanelView(LoginRequiredMixin, View):
                 player_ids = request.POST.getlist("players")
                 players = User.objects.filter(id__in=player_ids)
                 artwork.available_to.remove(*players)
-                artwork.forced_display.remove(*players)
 
-                channel_layer = get_channel_layer()
                 for player in players:
+                    profile = player.playerprofile
+                    if profile.forced_artwork == artwork:
+                        profile.forced_artwork = None
+                        profile.save()
+
+                    channel_layer = get_channel_layer()
                     async_to_sync(channel_layer.group_send)(
                         f"user_{player.username}",
                         {
-                            "type": "remove_artwork",
-                            "artwork_id": artwork.id,
+                            "type": "remove_force_artwork",
                         }
                     )
             elif action == "force_display":
                 player_ids = request.POST.getlist("players")
                 players = User.objects.filter(id__in=player_ids)
-                artwork.forced_display.add(*players)
+                artwork.available_to.add(*players)
 
-                channel_layer = get_channel_layer()
                 for player in players:
+                    profile = player.playerprofile
+                    profile.forced_artwork = artwork
+                    profile.save()
+
+                    channel_layer = get_channel_layer()
                     async_to_sync(channel_layer.group_send)(
                         f"user_{player.username}",
                         {
                             "type": "force_artwork",
                             "title": artwork.title,
                             "filename": artwork.filename,
+                            "artwork_id": artwork.id,
                         }
                     )
             elif action == "remove_force_display":
                 player_ids = request.POST.getlist("players")
                 players = User.objects.filter(id__in=player_ids)
-                artwork.forced_display.remove(*players)
 
-                channel_layer = get_channel_layer()
                 for player in players:
+                    profile = player.playerprofile
+                    if profile.forced_artwork == artwork:
+                        profile.forced_artwork = None
+                        profile.save()
+
+                    channel_layer = get_channel_layer()
                     async_to_sync(channel_layer.group_send)(
                         f"user_{player.username}",
                         {
@@ -130,17 +141,23 @@ class PlayerView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         player = request.user
+        profile = player.playerprofile
         available_artworks = player.available_artworks.all()
-        forced_artwork = player.forced_artworks.first()
+        forced_artwork = profile.forced_artwork
 
         if forced_artwork:
             current_artwork = forced_artwork
         else:
             current_artwork = None
         
+        messages = Message.objects.filter(
+            models.Q(is_global=True) | models.Q(target_player=player)
+        ).order_by('-timestamp')[:20]
+
         return render(request, self.template_name, {
             "available_artworks": available_artworks,
             "current_artwork": current_artwork,
+            "messages": messages,
         })
 
     def post(self, request, *args, **kwargs):
@@ -152,7 +169,6 @@ class PlayerView(LoginRequiredMixin, View):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         context["artworks"] = Artwork.objects.filter(target_player=user) | Artwork.objects.filter(is_global=True)
-        context["messages"] = Message.objects.filter(models.Q(is_global=True) | models.Q(target_player=user)).order_by('-timestamp')[:20]
         return context
 
 

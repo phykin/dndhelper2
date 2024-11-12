@@ -30,6 +30,23 @@
     {% for artwork in artworks %}
     <h3>{{ artwork.title }}</h3>
     <img src="/artwork/{{ artwork.filename }}" alt="{{ artwork.title }}" style="max-width: 200px;">
+    <p><strong>Available to:</strong></p>
+    <ul>
+        {% for player in artwork.available_to.all %}
+        <li>{{ player.username }}</li>
+        {% empty %}
+        <li>No players have access.</li>
+        {% endfor %}
+    </ul>
+    <p><strong>Forced display to:</strong></p>
+    <ul>
+        {% for profile in artwork.forced_on_profiles.all %}
+        <li>{{ profile.user.username }}</li>
+        {% empty %}
+        <li>No players are forced to view this artwork.</li>
+        {% endfor %}
+    </ul>
+
     <form method="post">
         {% csrf_token %}
         <input type="hidden" name="artwork_id" value="{{ artwork.id }}">
